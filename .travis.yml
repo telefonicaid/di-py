@@ -11,6 +11,7 @@ python:
 install:
   - "pip install ."
   - "pip install nose"
+  - "pip install pyshould"
 
 # command to run tests
 script: nosetests
