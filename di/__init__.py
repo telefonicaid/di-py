@@ -3,7 +3,7 @@
 :license: see LICENSE for more details.
 """
 
-from main import (
+from .main import (
     Key, injector, InjectorDescriptor, MetaInject,
     DependencyMap, ContextualDependencyMap, PatchedDependencyMap,
 )

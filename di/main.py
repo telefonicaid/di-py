@@ -19,11 +19,15 @@ sense, with minimum overhead and a lean learning curve.
 
 import logging
 import inspect
-import threading
-import thread
 import functools
 import re
 
+import threading
+try:
+    import thread
+except ImportError:
+    # Python 3.3 exposes .get_ident on the threading module
+    thread = threading
 
 logger = logging.getLogger(__name__)
 
@@ -181,7 +185,7 @@ def MetaInject(injector):
             """
 
             # Filter methods to be decorated
-            methods = ((k, v) for (k, v) in dct.iteritems() if is_user_function(k, v))
+            methods = ((k, v) for (k, v) in dct.items() if is_user_function(k, v))
 
             for m, fn in methods:
                 dct[m] = injector(fn)

@@ -6,7 +6,7 @@
 import unittest
 from pyshould import should
 
-from di.main import injector, Key, DependencyMap, ContextualDependencyMap, MetaInject
+from di import injector, Key, DependencyMap, ContextualDependencyMap, MetaInject
 
 class Ham(object):
     pass
@@ -109,21 +109,27 @@ class InjectorErrorsTests(unittest.TestCase):
 class InjectorMetaclassTests(unittest.TestCase):
 
     def setUp(self):
+        # Python 3 metaclass syntax is not compatible with Python 2.x
+        import sys
+        if sys.version_info[0] >= 3:
+            from nose.plugins.skip import SkipTest
+            raise SkipTest
+
+        self.ham = Ham()
         self.map = {
-            unittest.TestCase: self,
+            Ham: self.ham
         }
         self.inject = injector(self.map)
 
         class Foo(object):
             __metaclass__ = MetaInject(self.inject)
-
-            def echo(self, test=unittest.TestCase):
+            def echo(self, test=Ham):
                 return test
 
         self.foo = Foo()
 
     def test_inject_metaclass_default_value(self):
-        self.foo.echo() | should.be(self)
+        self.foo.echo() | should.be(self.ham)
 
     def test_inject_metaclass_override_from_calling_site(self):
         self.foo.echo(test="bar") | should.eql("bar")
