@@ -23,6 +23,16 @@ a sane separation of concerns.
 * [DI using descriptor protocol](di/main.py#L217-L221)
 * [DI using a metaclass](tests/di_tests.py#L107-L143)
 
+# Python interpreters supported
+
+Those are the python interpreters being validated via [travis.ci](https://github.com/juandebravo/di-py/blob/master/.travis.yml#L3) upon every change in the repository.
+
+- python 2.6
+- python 2.7
+- python 3.3
+- python 3.4
+- pypy
+
 # Install
 
 
@@ -58,7 +68,7 @@ Use the GitHub's pull request and issue tracker to provide patches or
 report problems with the library. All new functionality must be covered
 by unit tests before it can be included in the repository.
 
-The develop branch always has the cutting edge version of the code, if
+The master branch always has the cutting edge version of the code, if
 you are using it in your project it would be wise to create a fork of the
 repository or target a specific tag/commit for your dependencies.
 
