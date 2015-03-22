@@ -55,7 +55,7 @@ print fetch_it(100, http=HTTPSConnect('google.com', '80')).status
 ## Advanced usage with DependencyMap
 
 ```py
-from http.client import HTTPSConnection
+import hashlib
 from di import injector, Key, DependencyMap
 
 # Setup the dependency map
