@@ -53,7 +53,7 @@ repository or target a specific tag/commit for your dependencies.
 
 # Credits
 
-- Iván -DrSlump- Montes
-- Sergi Sorribas
-- Juan de Bravo
-- Tomas Montserrat
+- [Iván -DrSlump- Montes](https://github.com/drslump)
+- [Sergi Sorribas](https://github.com/lerovitch)
+- [Juan de Bravo](https://github.com/juandebravo)
+- [Tomas Montserrat](https://github.com/tomas-mm)
