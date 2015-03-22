@@ -14,12 +14,73 @@ inside the [Law of Demeter](http://en.wikipedia.org/wiki/Law_of_Demeter),
 by programming against a known interface without having to worry about
 how a concrete implementation is composed.
 
-Python offers *decorators*, *metaclasses* and *context managers* (among other
-functionalities) as a mean to implement user defined control structures.
-They work great to encapsulate patterns, hence complexity, while keeping
-a sane separation of concerns.
+Python is a highly dynamic language with an "open class" implementation for user
+types, thus the need for a full blown dependency injection framework is not
+specially needed. For medium to large applications though there is still the
+issue of how to actually implement dependency injection in the code using only
+Python's standard syntax/library.
+
+This library is designed to be very lightweight and flexible as to allow its use
+in a variety of scenarios, including their use to aid with unit testing.
+It doesn't form a *framework* but just a set of utilities to keep the dependency
+injection needs in a project under control by applying it only where it makes
+sense, with minimum overhead and a lean learning curve.
 
 # Scenarios
+
+## Basic example
+
+```py
+from http.client import HTTPSConnection
+from di import injector
+
+# Create the decorator setting up the dependencies (at configuration time)
+inject = injector({
+  HTTPSConnection: HTTPSConnection('localhost', '8080')  
+})
+
+# Apply the decorator to our app logic to inject what we have configured (at runtime)
+@inject
+def fetch_it(id, http=HTTPSConnection):
+  http.request("GET","/?id={0}".format(id))
+  return http.getresponse()
+
+# Call the logic without worrying about dependencies :)
+print fetch_it(100).status
+
+# Override the dependency if we have some specific use case
+print fetch_it(100, http=HTTPSConnect('google.com', '80')).status
+```
+
+## Advanced usage with DependencyMap
+
+```py
+from http.client import HTTPSConnection
+from di import injector, Key, DependencyMap
+
+# Setup the dependency map
+dm = DependencyMap()
+
+# Define a custom Key to map a dependency when it's not a class
+HashDep = Key('hash')
+
+# Build a dependency programatically but only the first time it's used
+@dm.singleton(HashDep)
+def hash(deps):
+  return lambda x: hashlib.md5(x).hexdigest()
+
+# Create the decorator and bind it to the dependency map
+inject = injector(dm)
+
+# Define our logic defining what should be injected by default
+@inject
+def hasher(subject, hash=HashDep)
+  return hash(subject)
+
+print hasher('foobarbaz')
+```
+
+## Explore the unit tests
 
 * [DI at method level](tests/di_tests.py#L32-L104)
 * [DI using descriptor protocol](di/main.py#L217-L221)
