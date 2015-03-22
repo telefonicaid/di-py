@@ -2,6 +2,8 @@
 
 Dependency injection library for python.
 
+[![Version](https://pypip.in/v/di-py/badge.png)](https://crate.io/packages/di-py)
+[![Downloads](https://pypip.in/d/di-py/badge.png)](https://crate.io/packages/di-py)
 [![Build Status](https://travis-ci.org/juandebravo/di-py.svg?branch=master)](https://travis-ci.org/juandebravo/di-py)
 
 # Background

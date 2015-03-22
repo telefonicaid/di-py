@@ -4,7 +4,7 @@ ifndef VERSION
 	$(error VERSION is undefined)
 endif
 
-	git checkout -b ${VERSION}-release develop
+	git checkout -b ${VERSION}-release master
 
 	sed -i '' -e 's/{VERSION}/${VERSION}/g' setup.py
 	git add setup.py
