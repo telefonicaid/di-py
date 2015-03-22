@@ -12,7 +12,7 @@ setup(
     name='di-py',
     description='Dependency injection library',
     version='{VERSION}',
-    url='https://www.github.com/telefonicadigital/di-py',
+    url='https://www.github.com/telefonicaid/di-py',
     author='Telefonica Digital',
     author_email='connect-dev@tid.es',
     packages=find_packages(),
