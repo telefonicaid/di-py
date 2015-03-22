@@ -11,7 +11,7 @@ except ImportError:
 setup(
     name='di-py',
     description='Dependency injection library',
-    version='{VERSION}',
+    version='1.0.2',
     url='https://www.github.com/juandebravo/di-py',
     author='Telefonica Digital',
     author_email='connect-dev@tid.es',
