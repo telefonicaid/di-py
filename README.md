@@ -38,7 +38,7 @@ python setup.py bdist_rpm
 
 # License
 
-See [LICENSE.txt](https://github.com/telefonicaid/di-py/blob/master/LICENSE)
+See [LICENSE](https://github.com/telefonicaid/di-py/blob/master/LICENSE)
 
 # Contributing
 
