@@ -2,6 +2,8 @@
 
 Dependency injection library for python.
 
+[![Build Status](https://travis-ci.org/juandebravo/di-py.svg?branch=master)](https://travis-ci.org/juandebravo/di-py)
+
 # Background
 
 Dependency injection *enables us to write better code*, regardless of doing so
