@@ -8,6 +8,8 @@ from pyshould import should
 
 from di.main import injector, Key, DependencyMap, ContextualDependencyMap, MetaInject
 
+class Ham(object):
+    pass
 
 class Spam(object):
     pass
@@ -104,7 +106,7 @@ class InjectorErrorsTests(unittest.TestCase):
             foo.bar()
 
 
-class InjectorMetaclasstests(unittest.TestCase):
+class InjectorMetaclassTests(unittest.TestCase):
 
     def setUp(self):
         self.map = {
@@ -280,6 +282,25 @@ class DependencyMapTests(unittest.TestCase):
             return deps['dep']
 
         self.map['foo'] | should.eq('DEP')
+
+
+class DependencyMapDescriptorTests(unittest.TestCase):
+
+    def test_acts_as_descriptor(self):
+        dm = DependencyMap()
+        dm[Ham] = Ham()
+        dm[Spam] = Spam()
+
+        class Subject:
+            ham = dm(Ham)
+            spam = dm(Spam)
+
+        subject = Subject()
+        subject.ham | should.be_a(Ham)
+        subject.spam | should.be_a(Spam)
+
+        dm[Ham] = None
+        subject.ham | should.be_None
 
 
 class ContextualDependencyMapTests(unittest.TestCase):
