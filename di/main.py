@@ -20,7 +20,6 @@ sense, with minimum overhead and a lean learning curve.
 import logging
 import inspect
 import functools
-import re
 
 import threading
 try:

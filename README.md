@@ -40,7 +40,7 @@ pip install git+ssh://git@github.com/telefonicaid/di-py.git@master
 
 ### Using RPM
 
-Generate RPM from source code: Download the code and generate the RPM
+Generate RPM from source code
 
 ```bash
 git clone git@github.com/telefonicaid/di-py.git
