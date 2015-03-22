@@ -1,18 +1,20 @@
 """
-:copyright: (c) 2013 by Telefonica I+D.
-:license: see LICENSE for more details.
-
 Dependency injection utilities
 
-Python is a highly dynamic language with an "open class" implementation for user types, thus
-the need for a full blown dependency injection framework is not specially needed. For medium
-to large applications though there is still the issue of how to actually implement dependency
-injection in the code using only Python's standard syntax/library.
+:copyright: (c) 2013-15 by Telefonica I+D.
+:license: see LICENSE.txt for more details.
 
-The following tools are designed to be very lightweight and flexible as to allow their use in
-a variety of scenarios, including their use to aid with unit testing. It doesn't form a *framework*
-but just a set of utilities to keep the dependency injection needs in a project under control by
-applying it only where it makes sense, with minimum overhead and a lean learning curve.
+Python is a highly dynamic language with an "open class" implementation for user
+types, thus the need for a full blown dependency injection framework is not
+specially needed. For medium to large applications though there is still the
+issue of how to actually implement dependency injection in the code using only
+Python's standard syntax/library.
+
+The following tools are designed to be very lightweight and flexible as to allow
+their use in a variety of scenarios, including their use to aid with unit testing.
+It doesn't form a *framework* but just a set of utilities to keep the dependency
+injection needs in a project under control by applying it only where it makes
+sense, with minimum overhead and a lean learning curve.
 """
 
 import logging
@@ -29,11 +31,11 @@ logger = logging.getLogger(__name__)
 class Key(object):
     """ Wraps a value to be used as key with the injector decorator.
 
-        In some cases it may be needed to map a dependency injection to something other
-        than a class. For instance, we may want to inject some string or numeric literal
-        into a function depending on the environment.
-        In this cases, this class can be used to indicate the decorator that it should
-        look in the mapping for the wrapped value.
+        In some cases it may be needed to map a dependency injection to something
+        other than a class. For instance, we might want to make some value
+        injectable based on a string identifier.
+        For those cases this class can be used to indicate the decorator that it
+        should look in the mapping for the wrapped value.
 
             inject = injector({ 'foo': 'FOO' })
 
@@ -59,8 +61,8 @@ class Key(object):
 
 
 def injector(dependencies):
-    """ Factory for the dependency injection decorator. It's meant to be initialized
-        with the set of dependencies to be used in the different methods.
+    """ Factory for the dependency injection decorator. It's meant to be
+        initialized with the map of dependencies to use on decorated functions.
 
             inject = injector({
                 ConfigManager: ConfigManager('settings.cfg'),
@@ -71,26 +73,28 @@ def injector(dependencies):
             def process(queue, config=ConfigManager, redis=Redis):
                 return redis.hmget(config['info_key'])
 
-        Dependency resolution is very straightforward, no inheritance is taken into
-        account, the dependency map must be initialized with base classes explicitly.
+        Dependency resolution is very straightforward, no inheritance is taken
+        into account, the dependency map must be initialized with the actual
+        classes used to annotate the decorated functions.
 
-        If a decorated method has defined a dependency not correctly configured in the
-        map, it will raise a LookupError to indicate so.
+        When a decorated method defines a dependency not correctly configured
+        in the map it will raise a LookupError to indicate so.
 
-        Note that the dependency map can be updated at any time, affecting following
-        calls to decorated methods.
+        Note that the dependency map can be updated at any time, affecting
+        following calls to decorated methods.
 
-        A common pattern is to apply dependency injection only when instantiating a
-        class. This can be easily accomplish by decorating the class __init__ method,
-        storing injected values as object attributes.
+        A common pattern is to apply dependency injection only when instantiating
+        a class. This can be easily accomplish by decorating the class' __init__
+        method, storing injected values as object attributes.
 
             @inject
             def __init__(self, config=ConfigManager):
                 self._config = config
 
-        If you see a TypeError with the message 'got multiple values for keyword argument',
-        make sure that all calls to the decorated method always use keyword arguments for
-        injected values. Use of positional injected arguments is not supported.
+        If you see a TypeError with the message 'got multiple values for keyword
+        argument', make sure that all calls to the decorated method always use
+        keyword arguments for injected values. Use of positional injected arguments
+        is not supported.
     """
 
     def wrapper(fn):
@@ -128,7 +132,8 @@ def injector(dependencies):
                 # If the argument was not explicitly given inject it
                 if name not in kwargs:
                     debug and logger.debug('%s: Injecting %s with %s', fn.__name__, name, key)
-                    # Avoid using `in` operator to check, so we can work with maps not supporting __contain__
+                    # Avoid using `in` operator to check, so we can work with
+                    # maps not supporting __contain__
                     try:
                         kwargs[name] = wrapper.dependencies[key]
                     except KeyError:
@@ -138,32 +143,42 @@ def injector(dependencies):
             return fn(*args, **kwargs)
 
         return inner
-    # Expose the dependencies publicly in the decorator
+
+    # Expose the dependency map publicly in the decorator
     wrapper.dependencies = dependencies
 
     return wrapper
 
 
 def MetaInject(injector):
-    """ method that returns a metaclass with the *injector* parameter as dependecy injector """
+    """
+        Builds a metaclass with the *injector* parameter as dependecy injector.
+    """
+
+    def is_user_function(name, fn):
+        """ Checks that a function isn't named as an operator overload (__name__) """
+        return callable(fn) and name[:2] != '__' and name[-2:] != '__'
 
     class ActualMetaInject(type):
-        """ Metaclass to define the dependency injection in a class level instead of requiring
-        the decorator definition in every instance method.
-        This might be used in classes that injects dependencies in most of its methods.
+        """
+            Metaclass to define the dependency injection in a class level instead
+            of requiring the decorator definition in every instance method.
+            This might be used in classes that injects dependencies for most of
+            their methods.
 
             class Foo(object):
                 __metaclass__ = MetaInject(inject)
+
+                # this method will be automatically decorated with `inject`
+                def foo(self, redis=Redis):
+                    pass
         """
 
         def __new__(cls, name, bases, dct):
             """
-            Generates a new instance including the injector factory in every method (but the *private* ones)
+                Generates a new instance including the injector factory for every
+                method except for *operator overloads*.
             """
-
-            # For a tuple, checks if the name parameter might be considered to
-            # NOT be a private built-in method and fn is callable
-            is_user_function = lambda name, fn: callable(fn) and not re.match(r'^_{2}\w+_{2}$', name)
 
             # Filter methods to be decorated
             methods = ((k, v) for (k, v) in dct.iteritems() if is_user_function(k, v))
@@ -177,7 +192,8 @@ def MetaInject(injector):
 
 
 class DependencyMap(object):
-    """ Implements the "dict" protocol for the dependencies but applies
+    """
+        Implements the "dict" protocol for the dependencies but applies
         custom logic on how to obtain them based on the configured flags:
 
             FACTORY: obtain the value by executing a function
@@ -197,13 +213,13 @@ class DependencyMap(object):
         self._threadlocals = threading.local()
 
     def __call__(self, key):
-        '''descriptor factory method.
+        """ descriptor factory method.
             >>> dm = DependencyMap()
             >>> class Bar(object):
                     pass
             >>> class Foo(object):
                     my_injected_dep = dm(Spam)
-        '''
+        """
         return InjectorDescriptor(key, self)
 
     def __getitem__(self, key):
@@ -243,9 +259,14 @@ class DependencyMap(object):
         # Make sure we remove any flags associated with the key
         if key in self._flags:
             del self._flags[key]
+
         self._values[key] = value
 
     def __contains__(self, key):
+        # Unwrap Key instances
+        if isinstance(key, Key):
+            key = key.value
+
         return key in self._values
 
     def register(self, key, value, flags=NONE):
@@ -264,6 +285,7 @@ class DependencyMap(object):
         """
         def decorator(fn):
             self.register(key, fn, flags | DependencyMap.FACTORY)
+
         return decorator
 
     def singleton(self, key):
