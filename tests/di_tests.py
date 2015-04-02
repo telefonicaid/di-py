@@ -389,6 +389,5 @@ class PatchedDependencyMapTests(unittest.TestCase):
         check_instance()
 
 
-
 if __name__ == '__main__':
     unittest.main()
