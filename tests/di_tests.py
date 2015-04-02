@@ -8,15 +8,17 @@ from pyshould import should
 
 from di import injector, Key, DependencyMap, ContextualDependencyMap, MetaInject
 
+
 class Ham(object):
     pass
+
 
 class Spam(object):
     pass
 
 
 class Eggs(object):
-    '''class that has dependencies injected via descriptor'''
+    """class that has dependencies injected via descriptor"""
 
     DEPS = DependencyMap()
 
