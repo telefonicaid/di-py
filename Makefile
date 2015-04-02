@@ -3,7 +3,12 @@ release:
 ifndef VERSION
 	$(error VERSION is undefined)
 endif
-	pip install twine
+	# Please install twine (`pip install twine`)
+	# in order to use https instead of http
+	# to upload a new version to pypi.
+	#
+	# https://twitter.com/glyph/status/580796504215924736
+	# https://pypi.python.org/pypi/twine
 
 	git checkout -b ${VERSION}-release master
 
