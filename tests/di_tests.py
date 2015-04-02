@@ -6,7 +6,7 @@
 import unittest
 from pyshould import should
 
-from di import injector, Key, DependencyMap, ContextualDependencyMap, MetaInject
+from di import injector, Key, DependencyMap, ContextualDependencyMap, PatchedDependencyMap, MetaInject
 
 
 class Ham(object):
@@ -351,6 +351,43 @@ class ContextualDependencyMapTests(unittest.TestCase):
 
         self.map.context('A')
         self.map['foo'] | should.eq(2)
+
+
+class PatchedDependencyMapTests(unittest.TestCase):
+    """
+    PatchedDependencyMap is mostly useful for testing with mocks
+    """
+
+    def setUp(self):
+        self.map = ContextualDependencyMap()
+        self.map[ContextualDependencyMap] = self.map
+        self.inject = injector(self.map)
+        @self.map.singleton(Ham)
+        def fn(deps):
+            return Ham()
+
+    def test_unpatched(self):
+        @self.inject
+        def check_instance(ham=Ham):
+            ham | should.be_instance_of(Ham)
+
+        check_instance()
+
+    def test_patched(self):
+        class Mock(object):
+            pass
+
+        patched_map = PatchedDependencyMap(self.map)
+        self.inject.dependencies = patched_map
+
+        patched_map[Ham] = Mock()
+
+        @self.inject
+        def check_instance(ham=Ham):
+            ham | should.be_instance_of(Mock)
+
+        check_instance()
+
 
 
 if __name__ == '__main__':
