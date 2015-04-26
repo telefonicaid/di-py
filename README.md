@@ -142,3 +142,4 @@ repository or target a specific tag/commit for your dependencies.
 - [Juan de Bravo](https://github.com/juandebravo)
 - [Sergi Sorribas](https://github.com/lerovitch)
 - [Tomas Montserrat](https://github.com/tomas-mm)
+- [Jordi Sesmero](https://github.com/jsmolina)
