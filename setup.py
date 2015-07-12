@@ -20,5 +20,6 @@ setup(
     install_requires=[],
     tests_require=['nose', 'pyshould'],
     test_suite='nose.collector',
+    version='1.0.3',
     zip_safe=False,
 )

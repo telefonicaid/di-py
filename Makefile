@@ -12,7 +12,7 @@ endif
 
 	git checkout -b ${VERSION}-release master
 
-	sed -i '' -e 's/{VERSION}/${VERSION}/g' setup.py
+	sed -i '' -e "s/version='[^']*'/version='${VERSION}'/" setup.py
 	git add setup.py
 	git commit -m "Tagging version ${VERSION}"
 
