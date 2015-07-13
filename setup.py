@@ -9,16 +9,16 @@ except ImportError:
     pass
 
 setup(
-    name='di-py',
-    description='Dependency injection library',
-    version='{VERSION}',
-    url='https://www.github.com/telefonicaid/di-py',
     author='Telefonica Digital',
     author_email='connect-dev@tid.es',
-    packages=find_packages(exclude=['test*']),
+    description='Dependency injection library',
     include_package_data=True,
     install_requires=[],
+    name='di-py',
+    packages=find_packages(exclude=['test*']),
+    url='https://www.github.com/telefonicaid/di-py',
     tests_require=['nose', 'pyshould'],
     test_suite='nose.collector',
+    version='1.0.3',
     zip_safe=False,
 )
