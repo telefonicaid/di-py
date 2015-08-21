@@ -22,5 +22,8 @@ endif
 	# Package and upload to pypi
 	rm -rf dist && python setup.py sdist && twine upload dist/*
 
+	# Bring new version to master
 	git checkout master
+	git merge --ff ${VERSION}-release
+	git push origin master
 	git branch -D ${VERSION}-release
