@@ -3,6 +3,8 @@
 :license: see LICENSE for more details.
 """
 
+import warnings
+
 import unittest
 from pyshould import should
 
@@ -75,6 +77,11 @@ class InjectorErrorsTests(unittest.TestCase):
             unittest.TestCase: self
         })
 
+    def test_using_injector_as_decorator(self):
+        with should.throw(RuntimeError):
+            @injector
+            def foo(): pass
+
     def test_missing_dependency(self):
         @self.inject
         def foo(missing=InjectorErrorsTests):
@@ -94,11 +101,20 @@ class InjectorErrorsTests(unittest.TestCase):
             foo(self)
 
     def test_no_injectable_params(self):
-        foo = self.inject(lambda: True)
+        foo = self.inject(lambda: True, warn=False)
         foo() | should.be_True
 
-        foo = self.inject(lambda x: x)
+        foo = self.inject(lambda x: x, warn=False)
         foo(10) | should.be(10)
+
+    def test_warns_when_unneeded(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            foo = self.inject(lambda: True)
+
+            w | should.have_len(1)
+            w[0].category | should.be(UserWarning)
 
     def test_descriptor_no_type_found(self):
         Foo.DEPS.clear()
@@ -128,6 +144,9 @@ class InjectorMetaclassTests(unittest.TestCase):
             def echo(self, test=Ham):
                 return test
 
+            def nouse(self):
+                pass
+
         self.foo = Foo()
 
     def test_inject_metaclass_default_value(self):
@@ -151,6 +170,20 @@ class InjectorMetaclassTests(unittest.TestCase):
                 return test
 
         Foo().echo(test="bar") | should.eql("BAR")
+
+    def test_no_warns_when_unneeded(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            class NoUse(object):
+                __metaclass__ = MetaInject(self.inject)
+
+                def foo(self):
+                    pass
+
+            NoUse()
+
+            w | should.have_len(0)
 
 
 class InjectorOverridesTests(unittest.TestCase):
@@ -198,6 +231,67 @@ class InjectorOverridesTests(unittest.TestCase):
         egg = Eggs()
         spam_again = egg.bar()
         spam_again | should.not_be(spam)
+
+
+class InjectorPatchTests(unittest.TestCase):
+
+    def setUp(self):
+        self.map = {
+            InjectorPatchTests: self,
+        }
+        self.inject = injector(self.map)
+
+    def test_patch_hides_previous_deps(self):
+
+        @self.inject
+        def test(foo=InjectorPatchTests): pass
+
+        self.inject.patch({})
+        with should.throw(LookupError):
+            test()
+
+        self.inject.unpatch()
+        test()
+
+    def test_patch_multiple(self):
+        @self.inject
+        def test(foo=InjectorPatchTests):
+            return foo
+
+        self.inject.patch({InjectorPatchTests: 1})
+        self.inject.patch({InjectorPatchTests: 2})
+        self.inject.patch({InjectorPatchTests: 3})
+
+        test() | should.eql(3)
+        self.inject.unpatch()
+        test() | should.eql(2)
+        self.inject.unpatch()
+        test() | should.eql(1)
+        self.inject.unpatch()
+        test() | should.eql(self)
+
+    def test_unpatch_error(self):
+        self.inject.patch({})
+        self.inject.unpatch()
+
+        with should.throw(RuntimeError):
+            self.inject.unpatch()
+
+    def test_deprecated_property(self):
+        @self.inject
+        def test(foo=InjectorPatchTests):
+            return foo
+
+        self.inject.dependencies = {InjectorPatchTests: 'foo'}
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            test() | should.eql('foo')
+
+            w | should.have_len(1)
+            w[0].category | should.be(UserWarning)
+
 
 
 class InjectorKeyTests(unittest.TestCase):
@@ -378,7 +472,7 @@ class PatchedDependencyMapTests(unittest.TestCase):
             pass
 
         patched_map = PatchedDependencyMap(self.map)
-        self.inject.dependencies = patched_map
+        self.inject.patch(patched_map)
 
         patched_map[Ham] = Mock()
 

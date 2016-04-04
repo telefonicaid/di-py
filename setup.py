@@ -19,6 +19,6 @@ setup(
     url='https://www.github.com/telefonicaid/di-py',
     tests_require=['nose', 'pyshould'],
     test_suite='nose.collector',
-    version='1.0.3',
+    version='1.1.0',
     zip_safe=False,
 )

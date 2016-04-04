@@ -18,6 +18,8 @@ sense, with minimum overhead and a lean learning curve.
 """
 
 import logging
+import warnings
+import types
 import inspect
 import functools
 
@@ -87,7 +89,7 @@ def injector(dependencies):
         following calls to decorated methods.
 
         A common pattern is to apply dependency injection only when instantiating
-        a class. This can be easily accomplish by decorating the class' __init__
+        a class. This can be easily accomplished by decorating the class' __init__
         method, storing injected values as object attributes.
 
             @inject
@@ -100,7 +102,13 @@ def injector(dependencies):
         is not supported.
     """
 
-    def wrapper(fn):
+    if isinstance(dependencies, (types.FunctionType, types.BuiltinFunctionType, functools.partial)):
+        raise RuntimeError('It seems injector is being used as a decorator instead of a decorator factory. Usage: inject = injector(deps)')
+
+    # Prepare the dependencies storage stack
+    deps_stack = [dependencies]
+
+    def wrapper(fn, warn=True):
         # Extract default values for keyword arguments
         args, varargs, keywords, defaults = inspect.getargspec(fn)
         if defaults:
@@ -116,13 +124,12 @@ def injector(dependencies):
             elif inspect.isclass(default):
                 mapping[name] = default
 
-        if not mapping:
-            logger.debug('%s: No injectable params found. You can safely remove the decorator.',
-                         fn.__name__)
+        if warn and not mapping:
+            warnings.warn('{0}: No injectable params found. You can safely remove the decorator.'.format(fn.__name__), stacklevel=2)
             return fn
 
         # Micro optimization: prepare mapping as a list of pairs
-        pairs = mapping.items()
+        pairs = tuple(mapping.items())
 
         # Wrapper executed on each invocation of the decorated method
         @functools.wraps(fn)
@@ -130,30 +137,53 @@ def injector(dependencies):
             # Micro optimization: cache logger level
             debug = logger.isEnabledFor(logging.DEBUG)
 
+            # Alias the latest dependencies
+            deps = deps_stack[-1]
+
+            # Adapt for deprecated property
+            if deps is not wrapper.dependencies:
+                warnings.warn('dependencies property is deprecated, please use patch/unpatch', stacklevel=2)
+                patch(wrapper.dependencies)
+                deps = wrapper.dependencies
+
             # Iterate over the set of 'injectable' parameters
-            for name, key in pairs:
+            for name, dependency in pairs:
                 # If the argument was not explicitly given inject it
                 if name not in kwargs:
-                    debug and logger.debug('%s: Injecting %s with %s', fn.__name__, name, key)
+                    debug and logger.debug('%s: Injecting %s with %s', fn.__name__, name, dependency)
                     # Avoid using `in` operator to check, so we can work with
                     # maps not supporting __contain__
                     try:
-                        kwargs[name] = wrapper.dependencies[key]
+                        kwargs[name] = deps[dependency]
                     except KeyError:
                         raise LookupError('Unable to find an instance for {0} when calling {1}'.format(
-                            key, fn.__name__))
+                            dependency, fn.__name__))
 
             return fn(*args, **kwargs)
 
         return inner
 
-    # Expose the dependency map publicly in the decorator
-    wrapper.dependencies = dependencies
+    def patch(deps):
+        deps_stack.append(deps)
+        wrapper.dependencies = deps
+
+    def unpatch():
+        if len(deps_stack) < 2:
+            raise RuntimeError('Unable to unpatch. Did you call patch?')
+        deps_stack.pop()
+        wrapper.dependencies = deps_stack[-1]
+
+    # Allow calling sites to change the dependency map
+    wrapper.patch = patch
+    wrapper.unpatch = unpatch
+
+    # Deprecated: Expose the dependency map publicly in the decorator
+    wrapper.dependencies = deps_stack[-1]
 
     return wrapper
 
 
-def MetaInject(injector):
+def MetaInject(inject_fn):
     """
         Builds a metaclass with the *injector* parameter as dependecy injector.
     """
@@ -187,7 +217,7 @@ def MetaInject(injector):
             methods = ((k, v) for (k, v) in dct.items() if is_user_function(k, v))
 
             for m, fn in methods:
-                dct[m] = injector(fn)
+                dct[m] = inject_fn(fn, warn=False)
 
             return type.__new__(cls, name, bases, dct)
 
