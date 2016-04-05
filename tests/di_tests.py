@@ -6,7 +6,7 @@
 import unittest
 from pyshould import should
 
-from di import injector, Key, DependencyMap, ContextualDependencyMap, PatchedDependencyMap, MetaInject
+from di import injector, Key, ProxyDependencyMap, DependencyMap, ContextualDependencyMap, PatchedDependencyMap, MetaInject
 
 
 class Ham(object):
@@ -309,6 +309,19 @@ class DependencyMapDescriptorTests(unittest.TestCase):
 
         dm[Ham] = None
         subject.ham | should.be_None
+
+class DependencyMapProxyTests(unittest.TestCase):
+
+    def test_acts_as_proxy(self):
+        dm = ProxyDependencyMap()
+        dm[Ham] = Ham()
+        dm[Spam] = Spam()
+
+        ham = dm(Ham)
+        spam = dm(Spam)
+
+        ham | should.be_a(Ham)
+        spam | should.be_a(Spam)
 
 
 class ContextualDependencyMapTests(unittest.TestCase):

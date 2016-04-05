@@ -16,7 +16,7 @@ It doesn't form a *framework* but just a set of utilities to keep the dependency
 injection needs in a project under control by applying it only where it makes
 sense, with minimum overhead and a lean learning curve.
 """
-
+import sys
 import logging
 import inspect
 import functools
@@ -27,6 +27,8 @@ try:
 except ImportError:
     # Python 3.3 exposes .get_ident on the threading module
     thread = threading
+
+PY2 = sys.version_info[0] == 2
 
 logger = logging.getLogger(__name__)
 
@@ -456,3 +458,146 @@ class InjectorDescriptor(object):
             return self.dependencies[self.class_obj]
         except KeyError:
             raise LookupError('Unable to find an instance for {0}'.format(self.class_obj))
+
+
+class ProxyDependencyMap(DependencyMap):
+    """
+    Derivated class that implements the proper __call__ method
+    to return an InjectorProxy .
+    """
+    def __call__(self, key):
+        """ Proxy factory method.
+            >>> dm = ProxyDependencyMap()
+            >>> my_injected_dep = dm(Spam)
+        """
+        return InjectorProxy(key, self)
+
+
+class InjectorProxy(object):
+    """
+    Alternate way of using the injector with a Proxy
+
+        >>> dm = ProxyDependencyMap()
+        >>> myfoo = dm(FOO)
+
+    This code is based on the LocalProxy implemented by the Werkzeug
+    https://github.com/pallets/werkzeug/blob/master/werkzeug/local.py#L254
+    """
+
+    def __init__(self, class_obj, dependencies):
+        object.__setattr__(self, '_InjectorProxy__class_obj', class_obj)
+        object.__setattr__(self, '_InjectorProxy__dependencies', dependencies)
+
+    def _get_current_object(self):
+        try:
+            return self.__dependencies[self.__class_obj]
+        except KeyError:
+            raise LookupError('Unable to find an instance for {0}'.format(self.class_obj))
+
+    @property
+    def __dict__(self):
+        try:
+            return self._get_current_object().__dict__
+        except RuntimeError:
+            raise AttributeError('__dict__')
+
+    def __repr__(self):
+        try:
+            obj = self._get_current_object()
+        except RuntimeError:
+            return '<%s unbound>' % self.__class__.__name__
+        return repr(obj)
+
+    def __bool__(self):
+        try:
+            return bool(self._get_current_object())
+        except RuntimeError:
+            return False
+
+    def __unicode__(self):
+        try:
+            return unicode(self._get_current_object())  # noqa
+        except RuntimeError:
+            return repr(self)
+
+    def __dir__(self):
+        try:
+            return dir(self._get_current_object())
+        except RuntimeError:
+            return []
+
+    def __getattr__(self, name):
+        return getattr(self._get_current_object(), name)
+
+    def __setitem__(self, key, value):
+        self._get_current_object()[key] = value
+
+    def __delitem__(self, key):
+        del self._get_current_object()[key]
+
+    if PY2:
+        __getslice__ = lambda x, i, j: x._get_current_object()[i:j]
+
+        def __setslice__(self, i, j, seq):
+            self._get_current_object()[i:j] = seq
+
+        def __delslice__(self, i, j):
+            del self._get_current_object()[i:j]
+
+    __setattr__ = lambda x, n, v: setattr(x._get_current_object(), n, v)
+    __delattr__ = lambda x, n: delattr(x._get_current_object(), n)
+    __str__ = lambda x: str(x._get_current_object())
+    __lt__ = lambda x, o: x._get_current_object() < o
+    __le__ = lambda x, o: x._get_current_object() <= o
+    __eq__ = lambda x, o: x._get_current_object() == o
+    __ne__ = lambda x, o: x._get_current_object() != o
+    __gt__ = lambda x, o: x._get_current_object() > o
+    __ge__ = lambda x, o: x._get_current_object() >= o
+    __cmp__ = lambda x, o: cmp(x._get_current_object(), o)  # noqa
+    __hash__ = lambda x: hash(x._get_current_object())
+    __call__ = lambda x, *a, **kw: x._get_current_object()(*a, **kw)
+    __len__ = lambda x: len(x._get_current_object())
+    __getitem__ = lambda x, i: x._get_current_object()[i]
+    __iter__ = lambda x: iter(x._get_current_object())
+    __contains__ = lambda x, i: i in x._get_current_object()
+    __add__ = lambda x, o: x._get_current_object() + o
+    __sub__ = lambda x, o: x._get_current_object() - o
+    __mul__ = lambda x, o: x._get_current_object() * o
+    __floordiv__ = lambda x, o: x._get_current_object() // o
+    __mod__ = lambda x, o: x._get_current_object() % o
+    __divmod__ = lambda x, o: x._get_current_object().__divmod__(o)
+    __pow__ = lambda x, o: x._get_current_object() ** o
+    __lshift__ = lambda x, o: x._get_current_object() << o
+    __rshift__ = lambda x, o: x._get_current_object() >> o
+    __and__ = lambda x, o: x._get_current_object() & o
+    __xor__ = lambda x, o: x._get_current_object() ^ o
+    __or__ = lambda x, o: x._get_current_object() | o
+    __div__ = lambda x, o: x._get_current_object().__div__(o)
+    __truediv__ = lambda x, o: x._get_current_object().__truediv__(o)
+    __neg__ = lambda x: -(x._get_current_object())
+    __pos__ = lambda x: +(x._get_current_object())
+    __abs__ = lambda x: abs(x._get_current_object())
+    __invert__ = lambda x: ~(x._get_current_object())
+    __complex__ = lambda x: complex(x._get_current_object())
+    __int__ = lambda x: int(x._get_current_object())
+    __long__ = lambda x: long(x._get_current_object())  # noqa
+    __float__ = lambda x: float(x._get_current_object())
+    __oct__ = lambda x: oct(x._get_current_object())
+    __hex__ = lambda x: hex(x._get_current_object())
+    __index__ = lambda x: x._get_current_object().__index__()
+    __coerce__ = lambda x, o: x._get_current_object().__coerce__(x, o)
+    __enter__ = lambda x: x._get_current_object().__enter__()
+    __exit__ = lambda x, *a, **kw: x._get_current_object().__exit__(*a, **kw)
+    __radd__ = lambda x, o: o + x._get_current_object()
+    __rsub__ = lambda x, o: o - x._get_current_object()
+    __rmul__ = lambda x, o: o * x._get_current_object()
+    __rdiv__ = lambda x, o: o / x._get_current_object()
+    if PY2:
+        __rtruediv__ = lambda x, o: x._get_current_object().__rtruediv__(o)
+    else:
+        __rtruediv__ = __rdiv__
+    __rfloordiv__ = lambda x, o: o // x._get_current_object()
+    __rmod__ = lambda x, o: o % x._get_current_object()
+    __rdivmod__ = lambda x, o: x._get_current_object().__rdivmod__(o)
+    __copy__ = lambda x: copy.copy(x._get_current_object())
+    __deepcopy__ = lambda x, memo: copy.deepcopy(x._get_current_object(), memo)
