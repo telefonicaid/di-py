@@ -20,6 +20,7 @@ import sys
 import logging
 import inspect
 import functools
+from contextlib import contextmanager
 
 import threading
 try:
@@ -274,6 +275,21 @@ class DependencyMap(object):
 
         return key in self._values
 
+    def __enter__(self):
+        """ ContextManager interface to temporally modify dependencies.
+
+            >>> deps[MyClass] = True
+            >>> with deps:
+            >>>    deps[MyClass] = False
+            >>> assert deps[MyClass] is True
+        """
+        self._saved = (self._values, self._flags)
+        self._values = dict((k, v) for k, v in self._values.items())
+        return self._values
+
+    def __exit__(self, type, value, traceback):
+        self._values, self._flags = self._saved
+
     def proxy(self, key):
         """ Proxy factory method.
 
@@ -323,12 +339,24 @@ class ContextualDependencyMap(DependencyMap):
         self._maps = {}
         self.map = self
 
-    def context(self, context):
-        """ Changes the current context for the dependencies returning the
-            child dependency map corresponding to the given context.
-            New context values will automatically create a child dependency map
-            associated with it.
-            This method will return the selected dependency map instance.
+    @contextmanager
+    def activate(self, context):
+        """ Context manager to temporary activate a given DependencyMap
+            for the duration of the with block.
+
+                with deps.activate('es'):
+                    ...
+        """
+        saved = self.map
+        try:
+            yield self.context(context)
+        finally:
+            self.map = saved
+
+    def context(self, context=None):
+        """ Switches the active set of the dependencies. New context values
+            will automatically create a DependencyMap associated with it.
+            Returns the dependency map instance switched to.
         """
         # If no context is given the context-less map is activated
         if context is None:
