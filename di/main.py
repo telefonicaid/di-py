@@ -274,6 +274,14 @@ class DependencyMap(object):
 
         return key in self._values
 
+    def proxy(self, key):
+        """ Proxy factory method.
+
+            >>> dm = DependencyMap()
+            >>> my_injected_dep = dm.proxy(Spam)
+        """
+        return InjectorProxy(self, key)
+
     def register(self, key, value, flags=NONE):
         """ Register a new dependency optionally giving it a set of flags
         """
@@ -460,71 +468,43 @@ class InjectorDescriptor(object):
             raise LookupError('Unable to find an instance for {0}'.format(self.class_obj))
 
 
-class ProxyDependencyMap(DependencyMap):
-    """
-    Derivated class that implements the proper __call__ method
-    to return an InjectorProxy .
-    """
-    def __call__(self, key):
-        """ Proxy factory method.
-            >>> dm = ProxyDependencyMap()
-            >>> my_injected_dep = dm(Spam)
-        """
-        return InjectorProxy(key, self)
-
-
 class InjectorProxy(object):
     """
     Alternate way of using the injector with a Proxy
 
-        >>> dm = ProxyDependencyMap()
-        >>> myfoo = dm(FOO)
+        >>> dm = DependencyMap()
+        >>> myfoo = dm.proxy(FOO)
 
-    This code is based on the LocalProxy implemented by the Werkzeug
+    This code is based on the LocalProxy implemented by Werkzeug
     https://github.com/pallets/werkzeug/blob/master/werkzeug/local.py#L254
     """
+    __slots__ = ('__dependencies', '__class_obj', '__dict__')
 
-    def __init__(self, class_obj, dependencies):
-        object.__setattr__(self, '_InjectorProxy__class_obj', class_obj)
+    def __init__(self, dependencies, class_obj):
         object.__setattr__(self, '_InjectorProxy__dependencies', dependencies)
+        object.__setattr__(self, '_InjectorProxy__class_obj', class_obj)
 
     def _get_current_object(self):
         try:
             return self.__dependencies[self.__class_obj]
         except KeyError:
-            raise LookupError('Unable to find an instance for {0}'.format(self.class_obj))
+            raise LookupError('Unable to find an instance for {0}'.format(self.__class_obj))
 
     @property
     def __dict__(self):
-        try:
-            return self._get_current_object().__dict__
-        except RuntimeError:
-            raise AttributeError('__dict__')
+        return self._get_current_object().__dict__
 
     def __repr__(self):
-        try:
-            obj = self._get_current_object()
-        except RuntimeError:
-            return '<%s unbound>' % self.__class__.__name__
-        return repr(obj)
+        return repr(self._get_current_object())
 
     def __bool__(self):
-        try:
-            return bool(self._get_current_object())
-        except RuntimeError:
-            return False
+        return bool(self._get_current_object())
 
     def __unicode__(self):
-        try:
-            return unicode(self._get_current_object())  # noqa
-        except RuntimeError:
-            return repr(self)
+        return unicode(self._get_current_object())
 
     def __dir__(self):
-        try:
-            return dir(self._get_current_object())
-        except RuntimeError:
-            return []
+        return dir(self._get_current_object())
 
     def __getattr__(self, name):
         return getattr(self._get_current_object(), name)
@@ -553,7 +533,7 @@ class InjectorProxy(object):
     __ne__ = lambda x, o: x._get_current_object() != o
     __gt__ = lambda x, o: x._get_current_object() > o
     __ge__ = lambda x, o: x._get_current_object() >= o
-    __cmp__ = lambda x, o: cmp(x._get_current_object(), o)  # noqa
+    __cmp__ = lambda x, o: cmp(x._get_current_object(), o)
     __hash__ = lambda x: hash(x._get_current_object())
     __call__ = lambda x, *a, **kw: x._get_current_object()(*a, **kw)
     __len__ = lambda x: len(x._get_current_object())

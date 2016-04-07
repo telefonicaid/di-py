@@ -6,7 +6,7 @@
 import unittest
 from pyshould import should
 
-from di import injector, Key, ProxyDependencyMap, DependencyMap, ContextualDependencyMap, PatchedDependencyMap, MetaInject
+from di import injector, Key, DependencyMap, ContextualDependencyMap, PatchedDependencyMap, MetaInject
 
 
 class Ham(object):
@@ -125,6 +125,7 @@ class InjectorMetaclassTests(unittest.TestCase):
 
         class Foo(object):
             __metaclass__ = MetaInject(self.inject)
+
             def echo(self, test=Ham):
                 return test
 
@@ -310,18 +311,44 @@ class DependencyMapDescriptorTests(unittest.TestCase):
         dm[Ham] = None
         subject.ham | should.be_None
 
+
 class DependencyMapProxyTests(unittest.TestCase):
 
     def test_acts_as_proxy(self):
-        dm = ProxyDependencyMap()
+        dm = DependencyMap()
         dm[Ham] = Ham()
         dm[Spam] = Spam()
 
-        ham = dm(Ham)
-        spam = dm(Spam)
+        ham = dm.proxy(Ham)
+        spam = dm.proxy(Spam)
 
         ham | should.be_a(Ham)
         spam | should.be_a(Spam)
+
+    def test_proxy_bypassed_methods(self):
+        dm = DependencyMap()
+        dm[list] = list()
+
+        l = dm.proxy(list)
+        l.append(1)
+        l.append(3)
+        l[1] = 2
+
+        l[0] | should.eq(1)
+        l[1] | should.eq(2)
+        len(l) | should.eq(2)
+        (l == [1, 2]) | should.eq(True)
+        repr(l) | should.eq("[1, 2]")
+        str(l) | should.eq("[1, 2]")
+        (l + [3, 4]) | should.eq([1, 2, 3, 4])
+
+        # and so on ...
+
+    def test_proxy_dependency_missing(self):
+        dm = DependencyMap()
+        l = dm.proxy("hi")
+        with should.throw(LookupError):
+            l.foo()
 
 
 class ContextualDependencyMapTests(unittest.TestCase):
@@ -375,6 +402,7 @@ class PatchedDependencyMapTests(unittest.TestCase):
         self.map = ContextualDependencyMap()
         self.map[ContextualDependencyMap] = self.map
         self.inject = injector(self.map)
+
         @self.map.singleton(Ham)
         def fn(deps):
             return Ham()

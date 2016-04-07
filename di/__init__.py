@@ -6,9 +6,9 @@
 from .main import (
     Key, injector, InjectorDescriptor, MetaInject,
     DependencyMap, ContextualDependencyMap, PatchedDependencyMap,
-    ProxyDependencyMap, InjectorProxy
+    InjectorProxy
 )
 
 __all__ = ['Key', 'injector', 'InjectorDescriptor', 'MetaInject',
            'DependencyMap', 'ContextualDependencyMap', 'PatchedDependencyMap',
-           'ProxyDependencyMap', 'InjectorProxy']
+           'InjectorProxy']
