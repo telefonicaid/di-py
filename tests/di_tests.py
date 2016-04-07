@@ -342,13 +342,42 @@ class DependencyMapProxyTests(unittest.TestCase):
         str(l) | should.eq("[1, 2]")
         (l + [3, 4]) | should.eq([1, 2, 3, 4])
 
-        # and so on ...
+    def test_proxy_reflects_changes(self):
+        dm = DependencyMap()
+        dm[Ham] = Ham()
+
+        ham = dm.proxy(Ham)
+        ham | should.be_a(Ham)
+
+        dm[Ham] = Spam()
+        ham | should.be_a(Spam)
 
     def test_proxy_dependency_missing(self):
         dm = DependencyMap()
         l = dm.proxy("hi")
         with should.throw(LookupError):
             l.foo()
+
+    def test_proxy_support_contextual(self):
+        self.cnt = 0
+
+        dm = ContextualDependencyMap()
+
+        @dm.singleton(Ham)
+        def difunc(ham):
+            self.cnt += 1
+            return self.cnt
+
+        ham = dm.proxy(Ham)
+        assert ham == 1
+        assert ham == 1
+
+        dm.context('es')
+        assert ham == 2
+        assert ham == 2
+
+        dm.context(None)
+        assert ham == 1
 
 
 class ContextualDependencyMapTests(unittest.TestCase):
