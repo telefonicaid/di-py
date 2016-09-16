@@ -1,3 +1,4 @@
+import sys
 from setuptools import setup, find_packages
 
 try:
@@ -17,8 +18,8 @@ setup(
     name='di-py',
     packages=find_packages(exclude=['test*']),
     url='https://www.github.com/telefonicaid/di-py',
-    tests_require=['nose', 'pyshould'],
-    test_suite='nose.collector',
-    version='1.1.0',
+    setup_requires=['pytest-runner'] if 'test' in sys.argv else [],
+    tests_require=['pytest', 'pyshould'],
+    version='1.1.1',
     zip_safe=False,
 )

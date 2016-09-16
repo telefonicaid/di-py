@@ -13,14 +13,13 @@ python:
   - "2.7"
   - "3.3"
   - "3.4"
+  - "3.5.1"
   - "pypy"
 
 # command to install dependencies
 install:
   - "pip install ."
-  - "pip install nose"
-  - "pip install pyshould"
 
 # command to run tests
-script: nosetests
+script: python setup.py test
 
