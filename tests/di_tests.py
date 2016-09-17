@@ -390,6 +390,22 @@ class DependencyMapTests(unittest.TestCase):
 
         self.map['foo'] | should.eq('DEP')
 
+    def test_context_manager(self):
+        self.map[Ham] = 10
+        self.map[Spam] = 20
+
+        @injector(self.map)
+        def func(ham=Ham, spam=Spam):
+            return ham + spam
+
+        func() | should.eql( 30 )
+
+        with self.map:
+            self.map[Ham] = 1
+            func() | should.eql( 21 )
+
+        func() | should.eql( 30 )
+
 
 class DependencyMapDescriptorTests(unittest.TestCase):
 
@@ -519,6 +535,34 @@ class ContextualDependencyMapTests(unittest.TestCase):
         self.map.context('A')
         self.map['foo'] | should.eq(2)
 
+    def test_activate_contextmanager(self):
+        @injector(self.map)
+        def test(foo=Key('foo')):
+            return foo
+
+        self.map['foo'] = 'ROOT'
+
+        test() | should.eql('ROOT')
+        with self.map.activate('A'):
+            self.map['foo'] = 'A'
+            test() | should.eql('A')
+
+        test() | should.eql('ROOT')
+        with self.map.activate('B'):
+            self.map['foo'] = 'B'
+            test() | should.eq('B')
+
+            # Force a context
+            self.map.context('A')
+            test() | should.eq('A')
+
+        test() | should.eql('ROOT')
+        with self.map.activate('A'):
+            with self.map.activate('B'):
+                test() | should.eq('B')
+            test() | should.eq('A')
+
+        test() | should.eql('ROOT')
 
 class PatchedDependencyMapTests(unittest.TestCase):
     """
