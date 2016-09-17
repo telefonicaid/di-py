@@ -56,6 +56,9 @@ class Key(object):
         else:
             self.value = value
 
+    def __hash__(self):
+        return hash(self.value)
+
     def __eq__(self, other):
         if isinstance(other, Key):
             return self.value == other.value

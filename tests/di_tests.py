@@ -3,12 +3,20 @@
 :license: see LICENSE for more details.
 """
 
+import sys
 import warnings
 
 import unittest
+import pytest
 from pyshould import should
 
 from di import injector, Key, DependencyMap, ContextualDependencyMap, PatchedDependencyMap, MetaInject
+
+PY3 = sys.version_info[0] >= 3
+
+# Import tests using Python3 syntax
+if PY3:
+    from .py3 import *
 
 
 class Ham(object):
@@ -107,6 +115,7 @@ class InjectorErrorsTests(unittest.TestCase):
         foo = self.inject(lambda x: x, warn=False)
         foo(10) | should.be(10)
 
+    @pytest.mark.skipif(PY3, reason='Python 3 deprecates getargspec generating an extra warning')
     def test_warns_when_unneeded(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -124,15 +133,10 @@ class InjectorErrorsTests(unittest.TestCase):
             foo.bar()
 
 
+@pytest.mark.skipif(PY3, reason='requires python 2.x (meta-class syntax changes)')
 class InjectorMetaclassTests(unittest.TestCase):
 
     def setUp(self):
-        # Python 3 metaclass syntax is not compatible with Python 2.x
-        import sys
-        if sys.version_info[0] >= 3:
-            from nose.plugins.skip import SkipTest
-            raise SkipTest
-
         self.ham = Ham()
         self.map = {
             Ham: self.ham
