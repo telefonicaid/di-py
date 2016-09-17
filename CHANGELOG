@@ -1,0 +1,24 @@
+Unreleased
+
+ - Context manager to temporally override a dependency (#11)
+ - Context manager to activate a give ContextualDependencyMap (#11)
+
+ > Kudos to @drslump
+
+1.1.1 (Apr 18, 2016)
+
+ - DependencyMap.proxy() creates proxied references to a dependency (#10)
+
+ > Kudos to @pfreixes
+
+1.1.0 (Apr 8, 2016)
+
+ - Proper handling for patching dependencies in the injector (#9)
+
+ > Kudos to @drslump, @jsmolina, @juandebravo and @franmrl
+
+1.0.0 (Mar 22, 2015)
+
+ - First public version
+
+ > Kudos to Telefonica I+D and the TU gBE team!

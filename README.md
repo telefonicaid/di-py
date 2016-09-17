@@ -36,7 +36,7 @@ from di import injector
 
 # Create the decorator setting up the dependencies (at configuration time)
 inject = injector({
-  HTTPSConnection: HTTPSConnection('localhost', '8080')  
+  HTTPSConnection: HTTPSConnection('localhost', '8080')
 })
 
 # Apply the decorator to our app logic to inject what we have configured (at runtime)
@@ -143,3 +143,4 @@ repository or target a specific tag/commit for your dependencies.
 - [Sergi Sorribas](https://github.com/lerovitch)
 - [Tomas Montserrat](https://github.com/tomas-mm)
 - [Jordi Sesmero](https://github.com/jsmolina)
+- [Pau Freixes](https://github.com/pfreixes)
