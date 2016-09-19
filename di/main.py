@@ -71,7 +71,37 @@ class Key(object):
         return self.value != other
 
 
-def injector(dependencies):
+def get_callable_defaults(fn, follow_wrapped=False):
+    """ Helper function to extracts a map of name:default from the signature
+        of a function.
+    """
+    try: # PY35
+        sign = inspect.signature(fn, follow_wrapped=follow_wrapped)
+        defaults = dict(
+            (p.name, p.annotation if p.default is Key else p.default)
+            for p in sign.parameters.values()
+            if p.default is not p.empty
+        )
+    except (TypeError, ValueError, AttributeError) as ex:
+        if follow_wrapped and not isinstance(ex, ValueError):
+            raise RuntimeError(
+                'injector is configured to follow wrapped methods but your Python '
+                'version does not support this feature')
+
+        try: # PY3
+            args, _, _, defaults, _, kwonlydefaults, _ = inspect.getfullargspec(fn)
+        except AttributeError: # PY2
+            args, _, _, defaults = inspect.getargspec(fn)
+            kwonlydefaults = None
+
+        defaults = dict(zip(reversed(args), reversed(defaults))) if defaults else {}
+        if kwonlydefaults:
+            defaults.update(kwonlydefaults)
+
+    return defaults
+
+
+def injector(dependencies, warn=True, follow_wrapped=False):
     """ Factory for the dependency injection decorator. It's meant to be
         initialized with the map of dependencies to use on decorated functions.
 
@@ -114,23 +144,17 @@ def injector(dependencies):
     # Prepare the dependencies storage stack
     deps_stack = [dependencies]
 
-    def wrapper(fn, warn=True):
-        # Extract default values for keyword arguments
-        args, varargs, keywords, defaults = inspect.getargspec(fn)
-        if defaults:
-            defaults = dict(zip(reversed(args), reversed(defaults)))
-        else:
-            defaults = {}
-
+    def wrapper(fn, __warn__=warn, follow_wrapped=follow_wrapped):
         # Mapping for injectable values (classes used as default value)
         mapping = {}
+        defaults = get_callable_defaults(fn, follow_wrapped=follow_wrapped)
         for name, default in defaults.items():
             if isinstance(default, Key):
                 mapping[name] = default.value
             elif inspect.isclass(default):
                 mapping[name] = default
 
-        if warn and not mapping:
+        if __warn__ and not mapping:
             warnings.warn('{0}: No injectable params found. You can safely remove the decorator.'.format(fn.__name__), stacklevel=2)
             return fn
 
@@ -147,7 +171,7 @@ def injector(dependencies):
             deps = deps_stack[-1]
 
             # Adapt for deprecated property
-            if deps is not wrapper.dependencies:
+            if __warn__ and deps is not wrapper.dependencies:
                 warnings.warn('dependencies property is deprecated, please use patch/unpatch', stacklevel=2)
                 patch(wrapper.dependencies)
                 deps = wrapper.dependencies
@@ -223,7 +247,7 @@ def MetaInject(inject_fn):
             methods = ((k, v) for (k, v) in dct.items() if is_user_function(k, v))
 
             for m, fn in methods:
-                dct[m] = inject_fn(fn, warn=False)
+                dct[m] = inject_fn(fn, __warn__=False)
 
             return type.__new__(cls, name, bases, dct)
 

@@ -109,13 +109,12 @@ class InjectorErrorsTests(unittest.TestCase):
             foo(self)
 
     def test_no_injectable_params(self):
-        foo = self.inject(lambda: True, warn=False)
+        foo = self.inject(lambda: True, __warn__=False)
         foo() | should.be_True
 
-        foo = self.inject(lambda x: x, warn=False)
+        foo = self.inject(lambda x: x, __warn__=False)
         foo(10) | should.be(10)
 
-    @pytest.mark.skipif(PY3, reason='Python 3 deprecates getargspec generating an extra warning')
     def test_warns_when_unneeded(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
