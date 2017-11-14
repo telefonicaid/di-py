@@ -12,10 +12,11 @@ from pyshould import should
 
 from di import injector, Key, DependencyMap, ContextualDependencyMap, PatchedDependencyMap, MetaInject
 
-PY3 = sys.version_info[0] >= 3
+PY3 = sys.hexversion >= 0x03000000
+PY35 = sys.hexversion >= 0x03050000
 
-# Import tests using Python3 syntax
-if PY3:
+# Import tests using Python3 syntax when >=3.5
+if PY35:
     from .py3 import *
 
 
