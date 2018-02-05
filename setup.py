@@ -20,6 +20,6 @@ setup(
     url='https://www.github.com/telefonicaid/di-py',
     setup_requires=['pytest-runner'] if 'test' in sys.argv else [],
     tests_require=['pytest', 'pyshould'],
-    version='1.1.1',
+    version='1.1.2',
     zip_safe=False,
 )
